@@ -14,7 +14,7 @@ install_requires = [
 
 
 setup(name='earthnet', 
-        version='0.1.2',
+        version='0.1.3',
         description="EarthNet2021 Toolkit: Download, Evaluation, Plotting",
         author="Vitus Benson",
         author_email="vbenson@bgc-jena.mpg.de",
