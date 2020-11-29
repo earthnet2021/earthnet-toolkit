@@ -60,12 +60,19 @@ class Downloader():
             delete (bool, optional): If True, deletes the downloaded tarball after unpacking it. Defaults to True.
         """        
         self = cls(data_dir)
-
+        print(splits)
         if isinstance(splits, str):
             if splits == "all":
                 splits = ["train","iid","ood","extreme","seasonal"]
-
-        assert(set(splits).issubset(set(["train","iid","ood","extreme","seasonal"])))
+        if isinstance(splits, str):
+            splits_set = {splits}
+            splits = (splits,)
+        elif isinstance(splits, list) and len(splits) == 1:
+            splits_set = {splits[0]}
+        else:
+            splits_set = set(splits)
+            
+        assert(splits_set.issubset(set(["train","iid","ood","extreme","seasonal"])))
 
         progress_file = os.path.join(self.data_dir, ".PROGRESS")
         try:
