@@ -1,10 +1,16 @@
 
 from typing import Sequence, Union
+import hashlib
+import pickle
 import os
 import urllib.request
 from tqdm import tqdm
 import tarfile
 
+if __name__ == "__main__":
+    from download_links import DOWNLOAD_LINKS
+else:
+    from earthnet.download_links import DOWNLOAD_LINKS
 
 class DownloadProgressBar(tqdm):
     def update_to(self, b=1, bsize=1, tsize=None):
@@ -12,17 +18,21 @@ class DownloadProgressBar(tqdm):
             self.total = tsize
         self.update(b * bsize - self.n)
 
+def get_sha_of_file(file: str, buf_size: int = 100*1024*1024):
+    sha = hashlib.sha256()
+    with open(file, 'rb') as f:
+        while True:
+            data = f.read(buf_size)
+            if not data:
+                break
+            sha.update(data)
+    return sha.hexdigest()
+
 
 class Downloader():
     """Downloader Class for EarthNet2021
     """    
-    __URL__ = {
-        "train": ["url","train.tar.gz"],
-        "iid": ["url","iid_test.tar.gz"],
-        "ood": ["url","ood_test.tar.gz"],
-        "extreme": ["url","extreme_test.tar.gz"],
-        "seasonal": ["url","seasonal_test.tar.gz"]
-    }
+    __URL__ = DOWNLOAD_LINKS
 
     def __init__(self, data_dir: str):
         """Initialize Downloader Class
@@ -51,26 +61,35 @@ class Downloader():
         """        
         self = cls(data_dir)
 
-        if isinstance(str, splits):
+        if isinstance(splits, str):
             if splits == "all":
                 splits = ["train","iid","ood","extreme","seasonal"]
 
         assert(set(splits).issubset(set(["train","iid","ood","extreme","seasonal"])))
 
-        for split in splits:
-            dl_url, filename = self.__URL__[split]
-            
-            tmp_path = os.path.join(self.data_dir, filename)
-            
-            if overwrite and os.path.isfile(tmp_path):
-                print("Removing temporary file.")
-                os.remove(tmp_path)
+        progress_file = os.path.join(self.data_dir, ".PROGRESS")
+        try:
+            with open(progress_file, "rb") as fp:
+                progress_list = pickle.load(fp)
+            print("Resuming Download.")
+        except:
+            progress_list = []
 
-            print(f"Downloading split {split} as temporary file {filename} to {self.data_dir}.")
-            if not os.path.isfile(tmp_path):
+        for split in splits:
+            print(f"Downloading split {split}")
+            
+            for filename, dl_url, sha in tqdm(self.__URL__[split]):
+                if filename in progress_list and not overwrite:
+                    print(f"{filename} allready downloaded")
+                    continue
+                tmp_path = os.path.join(self.data_dir, filename)
+                print("Downloading...")
                 with DownloadProgressBar(unit='B', unit_scale=True, miniters=1, desc=filename) as t:
                     urllib.request.urlretrieve(dl_url, filename = tmp_path, reporthook=t.update_to)
                 print("Downloaded!")
+                print("Asserting SHA256 Hash.")
+                assert(sha == get_sha_of_file(tmp_path))
+                print("SHA256 Hash is correct!")
                 print("Extracting tarball...")
                 with tarfile.open(tmp_path, 'r:gz') as tar:
                     members = tar.getmembers()
@@ -80,8 +99,12 @@ class Downloader():
                 if delete:
                     print("Deleting tarball...")
                     os.remove(tmp_path)
-            else:
-                print(f"File existed allready! Please Erase {tmp_path} in case it shall be overwritten or call with overwrite=True")
+                
+                progress_list.append(filename)
+                with open(progress_file, "wb") as fp:
+                    pickle.dump(progress_list, fp)
+
+
 
 if __name__ == "__main__":
     import fire
