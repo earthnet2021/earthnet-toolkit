@@ -7,3 +7,4 @@ __credits__ = 'Max-Planck-Institute for Biogeochemistry'
 
 from earthnet.parallel_score import EarthNetScore
 from earthnet.download import Downloader
+from earthnet.data_handling import Multicube
