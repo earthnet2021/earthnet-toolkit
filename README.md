@@ -7,9 +7,7 @@ Find more information on https://www.earthnet.tech.
 
 # Install
 ```
-git clone git@git.bgc-jena.mpg.de:earthnet/earthnet-toolkit.git
-cd earthnet-toolkit
-pip install .
+pip install earthnet
 ```
 
 # Download
@@ -21,7 +19,7 @@ en.Downloader.get(data_dir, splits)
 Where  `data_dir` is the directory where EarthNet2021 shall be saved and `splits` is `"all"`or a subset of `["train","iid","ood","extreme","seasonal"]`.
 
 
-Alternatively:
+Alternatively if package was installed locally:
 ```
 cd earthnet-toolkit/earthnet/
 python download.py -h
@@ -38,4 +36,12 @@ Then use the EarthNetScore:
 ```
 import earthnet as en
 en.EarthNetScore.get_ENS(Path/to/predictions, Path/to/targets, data_output_file = Path/to/data.json, ens_output_file = Path/to/ens.json)
+```
+
+# Get Coordinates for a cube
+Getting Lon-Lat-coordinates for a cube or tile is as simple as:
+```
+import earthnet as en
+en.get_coords_from_cube(cubename, return_meso = False)
+en.get_coords_from_tile(tilename)
 ```
