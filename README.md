@@ -54,3 +54,11 @@ import matplotlib.pyplot as plt
 fig = en.cube_gallery(cubepath, variable = "ndvi")
 plt.show()
 ```
+
+Creating a NDVI timeseries view for a cube is done as follows:
+```
+import earthnet as en
+import matplotlib.pyplot as plt
+fig = en.cube_ndvi_timeseries(predpath, targpath)
+plt.show()
+```

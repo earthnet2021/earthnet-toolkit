@@ -11,12 +11,13 @@ install_requires = [
     "scikit-image",
     "tqdm",
     "fire",
-    "pyproj"
+    "pyproj",
+    "pandas"
 ]
 
 
 setup(name='earthnet', 
-        version='0.2.2',
+        version='0.2.3',
         description="EarthNet2021 Toolkit: Download, Evaluation, Plotting",
         author="Vitus Benson",
         author_email="vbenson@bgc-jena.mpg.de",
