@@ -1,4 +1,5 @@
 
+import warnings
 
 import os
 import json
@@ -9,7 +10,9 @@ if __name__ == "__main__":
 else:
     from earthnet.coords_dict import COORDS
 
-def get_coords_from_cube(cubename: str, return_meso: bool = False):
+EXTREME_TILES = ["32UMC", "32UNC", "32UPC", "32UQC"]
+
+def get_coords_from_cube(cubename: str, return_meso: bool = False, ignore_warning = False):
     """
 
     Get the coordinates for a Cube in Lon-Lat-Grid.
@@ -21,6 +24,10 @@ def get_coords_from_cube(cubename: str, return_meso: bool = False):
     Returns:
         tuple: Min-Lon, Min-Lat, Max-Lon, Max-Lat or Min-Lon-HR, Min-Lat-HR, Max-Lon-HR, Max-Lat-HR, Min-Lon-Meso, Min-Lat-Meso, Max-Lon-Meso, Max-Lat-Meso
     """    
+    
+    if not ignore_warning:
+        warnings.warn('Getting coordinates to a cube is experimental. The resulting coordinates on Lon-Lat-Grid will never be pixel perfect. Under certain circumstances, the whole bounding box might shifted by up to 0.02° in either direction. Use with caution. EarthNet2021 does not provide geo-referenced data.')
+    
     cubetile,_, _,hr_x_min, hr_x_max, hr_y_min, hr_y_max, meso_x_min, meso_x_max, meso_y_min, meso_y_max = os.path.splitext(cubename)[0].split("_")
 
     tile = COORDS[cubetile]
@@ -29,10 +36,14 @@ def get_coords_from_cube(cubename: str, return_meso: bool = False):
 
     tile_x_min, tile_y_max = transformer.transform(tile["MinLon"],tile["MaxLat"], direction = "INVERSE")
 
-    cube_x_min = tile_x_min + 20 * float(hr_x_min)
-    cube_x_max = tile_x_min + 20 * float(hr_x_max)
-    cube_y_min = tile_y_max - 20 * float(hr_y_min)
-    cube_y_max = tile_y_max - 20 * float(hr_y_max)
+    if cubetile in EXTREME_TILES:
+        hr_x_min = int(hr_x_min) + 57
+        hr_x_max = int(hr_x_max) + 57
+
+    cube_x_min = tile_x_min + 20 * float(hr_y_min)
+    cube_x_max = tile_x_min + 20 * float(hr_y_max)
+    cube_y_min = tile_y_max - 20 * float(hr_x_min)
+    cube_y_max = tile_y_max - 20 * float(hr_x_max)
     
     cube_lon_min, cube_lat_min = transformer.transform(cube_x_min, cube_y_max)
     cube_lon_max, cube_lat_max = transformer.transform(cube_x_max, cube_y_min)
