@@ -12,12 +12,14 @@ install_requires = [
     "tqdm",
     "fire",
     "pyproj",
-    "pandas"
+    "pandas",
+    "s3fs",
+    "xarray"
 ]
 
 
 setup(name='earthnet', 
-        version='0.2.4',
+        version='0.3.2',
         description="EarthNet2021 Toolkit: Download, Evaluation, Plotting",
         author="Vitus Benson",
         author_email="vbenson@bgc-jena.mpg.de",

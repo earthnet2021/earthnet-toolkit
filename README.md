@@ -10,6 +10,16 @@ Find more information on https://www.earthnet.tech.
 pip install earthnet
 ```
 
+# Downloading new dataset EarthNet2021x
+
+Ensure you have enough free disk space! We recommend 1TB.
+```
+import earthnet as en
+en.download(dataset = "earthnet2021x", split = "train", save_directory = "data_dir")
+```
+Where  `data_dir` is the directory where EarthNet2021 shall be saved and `splits` is `"all"`or a subset of `["train","iid","ood","extreme","seasonal"]`.
+
+
 # Download
 Ensure you have enough free disk space! We recommend 1TB.
 ```
