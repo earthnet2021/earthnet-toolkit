@@ -88,12 +88,10 @@ def score_over_dataset(testset_dir, pred_dir, name_ndvi_pred = "ndvi_pred", verb
     mangroves_score = df[df.landcover == 95.].NNSE.mean()
     moss_score = df[df.landcover == 100.].NNSE.mean()
 
-    veg_micro_score = df[df.landcover <= 30.].NNSE.mean()
-    veg_macro_score = np.nanmean([tree_score, shrub_score, grass_score])
+    veg_score = df[df.landcover <= 30.].NNSE.mean()
 
     scores = {
-        "veg_macro_score": veg_macro_score,
-        "veg_micro_score": veg_micro_score,
+        "veg_score": veg_score,
         "tree_score": tree_score,
         "shrub_score": shrub_score,
         "grass_score": grass_score,
