@@ -397,11 +397,7 @@ class EarthNetScore:
         folders_pred= {d.name for d in pred_dir.glob("*") if d.is_dir()}
         folders_targ= {d.name for d in targ_dir.glob("*") if d.is_dir()}
         if not folders_pred.issubset(folders_targ):
-            #Attempt to fix
-            targ_dir = targ_dir/"target"
-            folders_targ= {d.name for d in targ_dir.glob("*") if d.is_dir()}
-            if not folders_pred.issubset(folders_targ):
-                raise RuntimeError(f'Prediction folders: \n{folders_pred}\nare not a subset of target folders:\n{folders_targ}')
+            raise RuntimeError(f'Prediction folders: \n{folders_pred}\nare not a subset of target folders:\n{folders_targ}')
 
         targ_paths = sorted(list(targ_dir.glob("**/*.npz")))
 
