@@ -43,30 +43,30 @@ class CubeCalculator:
 
         scaled_dists = dists ** scaling_factor
 
-        distmedian = np.nanmedian(scaled_dists)
-        if distmedian is None:
-            mad = None
-        else:
-            mad = max(0,min(1,1-distmedian))
-        
-        MAE_frames = []
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", category=RuntimeWarning)
+            distmedian = np.nanmedian(scaled_dists)
+            if np.isnan(distmedian):
+                mad = None
+            else:
+                mad = max(0,min(1,1-distmedian))
+            
+            MAE_frames = []
             for t in range(dists.shape[-1]):
                 mean = np.nanmean(dists[:,:,:,t])
                 if mean is np.nan:
                     mean = 1000
                 MAE_frames.append(mean)
-        
-        debug_info = {
-                        "minimum distance": float(np.nanmin(dists)), 
-                        "maximum distance": float(np.nanmax(dists)), 
-                        "mean distance": float(np.nanmean(dists)), 
-                        "median distance": float(np.nanmedian(dists)), 
-                        "number nan": float(np.isnan(dists).sum()), 
-                        "MAD score": float(mad),
-                        "frames": MAE_frames 
-                    }
+            
+            debug_info = {
+                            # "minimum distance": float(np.nanmin(dists)), 
+                            # "maximum distance": float(np.nanmax(dists)), 
+                            # "mean distance": float(np.nanmean(dists)), 
+                            # "median distance": float(np.nanmedian(dists)), 
+                            # "number nan": float(np.isnan(dists).sum()), 
+                            # "MAD score": float(mad),
+                            # "frames": MAE_frames 
+                        }
         return mad, debug_info
 
     @staticmethod
@@ -139,20 +139,21 @@ class CubeCalculator:
         debug_info = {
                         #"target slopes": btarg[:,0,0].tolist(), 
                         #"predicted slopes": bpred[:,0,0].tolist(), 
-                        "min target slope": float(np.nanmin(btarg[:,0,0])), 
-                        "max target slope": float(np.nanmax(btarg[:,0,0])), 
-                        "mean target slope": float(np.nanmean(btarg[:,0,0])), 
-                        "number nan target slope": float(np.isnan(btarg[:,0,0]).sum()),
-                        "min pred slope": float(np.nanmin(bpred[:,0,0])), 
-                        "max pred slope": float(np.nanmax(bpred[:,0,0])), 
-                        "mean pred slope": float(np.nanmean(bpred[:,0,0])), 
-                        "number nan pred slope": float(np.isnan(bpred[:,0,0]).sum()),
-                        "minimum distance": float(np.nanmin(dists)), 
-                        "maximum distance": float(np.nanmax(dists)), 
-                        "mean distance": float(np.nanmean(dists)), 
-                        "median distance": float(np.nanmedian(dists)), 
-                        "number nan": float(np.isnan(dists).sum()), 
-                        "ols score": float(ols)}
+                        # "min target slope": float(np.nanmin(btarg[:,0,0])), 
+                        # "max target slope": float(np.nanmax(btarg[:,0,0])), 
+                        # "mean target slope": float(np.nanmean(btarg[:,0,0])), 
+                        # "number nan target slope": float(np.isnan(btarg[:,0,0]).sum()),
+                        # "min pred slope": float(np.nanmin(bpred[:,0,0])), 
+                        # "max pred slope": float(np.nanmax(bpred[:,0,0])), 
+                        # "mean pred slope": float(np.nanmean(bpred[:,0,0])), 
+                        # "number nan pred slope": float(np.isnan(bpred[:,0,0]).sum()),
+                        # "minimum distance": float(np.nanmin(dists)), 
+                        # "maximum distance": float(np.nanmax(dists)), 
+                        # "mean distance": float(np.nanmean(dists)), 
+                        # "median distance": float(np.nanmedian(dists)), 
+                        # "number nan": float(np.isnan(dists).sum()), 
+                        # "ols score": float(ols)
+                        }
 
         return ols, debug_info
 
@@ -160,7 +161,12 @@ class CubeCalculator:
     def EMD(cls, preds: np.ndarray, targs: np.ndarray, masks: np.ndarray) -> Tuple[float, dict]:
         """Earth mover distance score
 
-        The earth mover distance (w1 metric) is computed between target and predicted pixelwise NDVI timeseries value distributions. For the target distributions, only non-masked values are considered. Scaled by a scaling factor such that a distance the size of a 99.7% confidence interval of the variance of the pixelwise centered NDVI timeseries is scaled to 0.9 (such that the ols-score becomes 0.1). The emd-score is 1-mean(emd), it is scaled from 0 (worst) to 1 (best).
+        The earth mover distance (w1 metric) is computed between target and predicted pixelwise 
+        NDVI timeseries value distributions. For the target distributions, only non-masked 
+        values are considered. Scaled by a scaling factor such that a distance the size of a 
+        99.7% confidence interval of the variance of the pixelwise centered NDVI timeseries 
+        is scaled to 0.9 (such that the ols-score becomes 0.1). The emd-score is 1-mean(emd), 
+        it is scaled from 0 (worst) to 1 (best).
 
         Args:
             preds (np.ndarray): NDVI Predictions, shape h,w,1,t
@@ -174,25 +180,25 @@ class CubeCalculator:
         dists = np.apply_along_axis(cls.compute_w1, axis = -1, arr = data)
         
         scaling_factor = 0.10082047548620601 # Computed via the expected distance from pixelwise timeseries variance
-
         dists = np.abs(dists).astype(np.float64)
-
         scaled_dists = dists ** scaling_factor
 
-        distmean = np.nanmean(scaled_dists)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=RuntimeWarning)
+            distmean = np.nanmean(scaled_dists)
 
-        if distmean is None:
-            emd = None
+        if np.isnan(distmean):
+            emd= None
         else:
             emd = max(0,min(1, 1-distmean))
 
         debug_info = {
-                        "minimum distance": float(np.nanmin(dists)), 
-                        "maximum distance": float(np.nanmax(dists)), 
-                        "mean distance": float(np.nanmean(dists)), 
-                        "median distance": float(np.nanmedian(dists)), 
-                        "number nan": float(np.isnan(dists).sum()), 
-                        "w1 score": float(emd)
+                        # "minimum distance": float(np.nanmin(dists)), 
+                        # "maximum distance": float(np.nanmax(dists)), 
+                        # "mean distance": float(np.nanmean(dists)), 
+                        # "median distance": float(np.nanmedian(dists)), 
+                        # "number nan": float(np.isnan(dists).sum()), 
+                        # "w1 score": float(emd)
                     }
 
         return emd, debug_info
@@ -202,7 +208,8 @@ class CubeCalculator:
         """Computing w1 distance for np.apply_along_axis
 
         Args:
-            datarow (np.ndarray): 1-dimensional array that can be split into three parts of equal size, these are in order: predictions, targets and masks for a single pixel and channel through time.
+            datarow (np.ndarray): 1-dimensional array that can be split into three parts of equal size, 
+            these are in order: predictions, targets and masks for a single pixel and channel through time.
 
         Returns:
             Union[np.ndarray, None]: w1 distance between prediction and target, if not completely masked, else None.
@@ -218,7 +225,9 @@ class CubeCalculator:
     def SSIM(preds: np.ndarray, targs: np.ndarray, masks: np.ndarray) -> Tuple[float, dict]:
         """Structural similarity index score
 
-        Structural similarity between predicted and target cube computed for all channels and frames individually if the given target is less than 30% masked. Scaled by a scaling factor such that a mean SSIM of 0.8 is scaled to a ssim-score of 0.1. The ssim-score is mean(ssim), it is scaled from 0 (worst) to 1 (best).
+        Structural similarity between predicted and target cube computed for all channels and frames individually if the given 
+        target is less than 30% masked. Scaled by a scaling factor such that a mean SSIM of 0.8 is scaled to a ssim-score of 0.1. 
+        The ssim-score is mean(ssim), it is scaled from 0 (worst) to 1 (best).
 
         Args:
             preds (np.ndarray): Predictions, shape h,w,c,t
@@ -257,13 +266,13 @@ class CubeCalculator:
         
         debug_info = {
                         #"framewise SSIM, 1000 if frame was too much masked": ssim_frames, 
-                        "Min SSIM": str(np.ma.filled(np.ma.masked_equal(np.array(ssim_frames), 1000.0).min(), np.nan)),
-                        "Max SSIM": str(np.ma.filled(np.ma.masked_equal(np.array(ssim_frames), 1000.0).max(), np.nan)),
-                        "Mean SSIM": str(np.ma.filled(np.ma.masked_equal(np.array(ssim_frames), 1000.0).mean(), np.nan)),
-                        "Standard deviation SSIM": str(np.ma.filled(np.ma.masked_equal(np.array(ssim_frames), 1000.0).std(), np.nan)),
-                        "Valid SSIM frames": counts,
-                        "SSIM score": ssim,
-                        "frames": ssim_frames
+                        # "Min SSIM": str(np.ma.filled(np.ma.masked_equal(np.array(ssim_frames), 1000.0).min(), np.nan)),
+                        # "Max SSIM": str(np.ma.filled(np.ma.masked_equal(np.array(ssim_frames), 1000.0).max(), np.nan)),
+                        # "Mean SSIM": str(np.ma.filled(np.ma.masked_equal(np.array(ssim_frames), 1000.0).mean(), np.nan)),
+                        # "Standard deviation SSIM": str(np.ma.filled(np.ma.masked_equal(np.array(ssim_frames), 1000.0).std(), np.nan)),
+                        # "Valid SSIM frames": counts,
+                        # "SSIM score": ssim,
+                        # "frames": ssim_frames
                     }
 
         return ssim, debug_info
@@ -293,7 +302,8 @@ class CubeCalculator:
             targs = targs[:,:,:,-preds.shape[-1]:]
             masks = masks[:,:,:,-preds.shape[-1]:]
         
-        assert(preds.shape == targs.shape)
+        if not(preds.shape == targs.shape):
+            raise RuntimeError(f'{preds.shape=}; {targs.shape=}')
 
         preds[preds < 0] = 0
         preds[preds > 1] = 1
@@ -349,7 +359,8 @@ class EarthNetScore:
     Example:
 
         Direct computation
-        >>> EarthNetScore.get_ENS(Path/to/predictions, Path/to/targets, data_output_file = Path/to/data.json, ens_output_file = Path/to/ens.json)
+        >>> EarthNetScore.get_ENS(Path/to/predictions, Path/to/targets, 
+                data_output_file = Path/to/data.json, ens_output_file = Path/to/ens.json)
 
         More control (for further plotting)
         >>> ENS = EarthNetScore(Path/to/predictions, Path/to/targets)
@@ -361,8 +372,10 @@ class EarthNetScore:
         """Initialize EarthNetScore
 
         Args:
-            pred_dir (str): Directory with predictions, format is one of {pred_dir/tile/cubename.npz, pred_dir/tile/experiment_cubename.npz}
-            targ_dir (str): Directory with targets, format is one of {targ_dir/target/tile/target_cubename.npz, targ_dir/target/tile/cubename.npz, targ_dir/tile/target_cubename.npz, targ_dir/tile/cubename.npz}
+            pred_dir (str): Directory with predictions, format is one of {pred_dir/tile/cubename.npz, 
+                pred_dir/tile/experiment_cubename.npz}
+            targ_dir (str): Directory with targets, format is one of {targ_dir/target/tile/target_cubename.npz, 
+                targ_dir/target/tile/cubename.npz, targ_dir/tile/target_cubename.npz, targ_dir/tile/cubename.npz}
         """        
         self.get_paths(pred_dir, targ_dir)
 
@@ -372,27 +385,36 @@ class EarthNetScore:
         Each target cube gets 1 or more predicted cubes.
 
         Args:
-            pred_dir (str): Directory with predictions, format is one of {pred_dir/tile/cubename.npz, pred_dir/tile/experiment_cubename.npz}
-            targ_dir (str): Directory with targets, format is one of {targ_dir/target/tile/target_cubename.npz, targ_dir/target/tile/cubename.npz, targ_dir/tile/target_cubename.npz, targ_dir/tile/cubename.npz}
+            pred_dir (str): Directory with predictions, format is one of {pred_dir/tile/cubename.npz, 
+                pred_dir/tile/experiment_cubename.npz}
+            targ_dir (str): Directory with targets, format is one of {targ_dir/target/tile/target_cubename.npz, 
+                targ_dir/target/tile/cubename.npz, targ_dir/tile/target_cubename.npz, targ_dir/tile/cubename.npz}
         """        
         print("Initializing filepaths...")
 
         pred_dir, targ_dir = Path(pred_dir), Path(targ_dir)
 
-        if "target" in [d.name for d in targ_dir.glob("*") if d.is_dir()]:
+        folders_pred= {d.name for d in pred_dir.glob("*") if d.is_dir()}
+        folders_targ= {d.name for d in targ_dir.glob("*") if d.is_dir()}
+        if not folders_pred.issubset(folders_targ):
+            #Attempt to fix
             targ_dir = targ_dir/"target"
-
-        assert({d.name for d in pred_dir.glob("*") if d.is_dir()}.issubset({d.name for d in targ_dir.glob("*") if d.is_dir()}))
+            folders_targ= {d.name for d in targ_dir.glob("*") if d.is_dir()}
+            if not folders_pred.issubset(folders_targ):
+                raise RuntimeError(f'Prediction folders: \n{folders_pred}\nare not a subset of target folders:\n{folders_targ}')
 
         targ_paths = sorted(list(targ_dir.glob("**/*.npz")))
 
         filepaths = []
-        for targ_path in tqdm(targ_paths):
+        for i, targ_path in enumerate(tqdm(targ_paths)):
 
-            pred_paths = sorted(list(pred_dir.glob(f"**/*{self.__name_getter(targ_path)}")))
+            name= self.__name_getter(targ_path)
+            pred_paths = sorted(list(pred_dir.glob(f"**/*{name}")))
             assert (len(pred_paths) <= 10),"EarthNetScore is calculated with up to 10 predictions for a target, but more than 10 predictions were found."
             for pred_path in pred_paths:
                 filepaths.append({"pred_filepath": pred_path, "targ_filepath": targ_path})
+            if i == 0 and pred_paths == []:
+                raise RuntimeError(f'pred_paths is empty. Globed \"{f"**/*{name}"}\" from \"{pred_dir}\" and found nothing.')
         
         self.filepaths = filepaths
 
@@ -412,9 +434,12 @@ class EarthNetScore:
         regex = re.compile('\d{2}[A-Z]{3}')
         if bool(regex.match(components[0])):
             return path.name
-        else:
-            assert(bool(regex.match(components[1])))
+        elif bool(regex.match(components[1])):
             return "_".join(components[1:]) 
+        elif bool(regex.match(components[2])):
+            return "_".join(components[2:]) 
+        else:
+            raise RuntimeError(f'name {components} had unexpected format')
 
     def compute_scores(self, n_workers: Optional[int] = -1) -> dict:
         """Compute subscores for all cubepaths
