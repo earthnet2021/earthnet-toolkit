@@ -41,7 +41,9 @@ def normalized_NSE(targ, pred, name_ndvi_pred = "ndvi_pred"):
 
     nnse = 1 / (2 - (1 - (((targ_ndvi - pred_ndvi)**2).sum("time") / ((targ_ndvi - targ_ndvi.mean("time"))**2).sum("time"))))
 
-    df = xr.Dataset({"NNSE": nnse, "landcover": targ.esawc_lc}).to_dataframe()
+    n_obs = (mask == 0).sum("time")
+
+    df = xr.Dataset({"NNSE": nnse, "landcover": targ.esawc_lc, "n_obs": n_obs}).to_dataframe()
 
     return df.drop(columns="sentinel:product_id", errors = "ignore")
 
@@ -80,15 +82,15 @@ def score_over_dataset(testset_dir, pred_dir, name_ndvi_pred = "ndvi_pred", verb
 
     df = pd.concat(dfs).reset_index()
 
-    tree_score = df[df.landcover == 10.].NNSE.mean()
-    shrub_score = df[df.landcover == 20.].NNSE.mean()
-    grass_score = df[df.landcover == 30.].NNSE.mean()
-    crop_score = df[df.landcover == 40.].NNSE.mean()
-    swamp_score = df[df.landcover == 90.].NNSE.mean()
-    mangroves_score = df[df.landcover == 95.].NNSE.mean()
-    moss_score = df[df.landcover == 100.].NNSE.mean()
+    tree_score = 2 - 1/df[df.landcover == 10.].NNSE.mean()
+    shrub_score = 2 - 1/df[df.landcover == 20.].NNSE.mean()
+    grass_score = 2 - 1/df[df.landcover == 30.].NNSE.mean()
+    crop_score = 2 - 1/df[df.landcover == 40.].NNSE.mean()
+    swamp_score = 2 - 1/df[df.landcover == 90.].NNSE.mean()
+    mangroves_score = 2 - 1/df[df.landcover == 95.].NNSE.mean()
+    moss_score = 2 - 1/df[df.landcover == 100.].NNSE.mean()
 
-    veg_score = df[df.landcover <= 30.].NNSE.mean()
+    veg_score = 2 - 1/df[df.landcover <= 30.].NNSE.mean()
 
     scores = {
         "veg_score": veg_score,
