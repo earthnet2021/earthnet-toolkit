@@ -47,6 +47,19 @@ def normalized_NSE(targ, pred, name_ndvi_pred = "ndvi_pred"):
 
     return df.drop(columns="sentinel:product_id", errors = "ignore")
 
+
+def score_from_args(args):
+
+    targetfile, predfile, name_ndvi_pred = args
+
+    targ = xr.open_dataset(targetfile)
+    pred = xr.open_dataset(predfile)
+
+    curr_df = normalized_NSE(targ, pred, name_ndvi_pred=name_ndvi_pred)
+    curr_df["id"] = targetfile.stem
+
+    return curr_df
+
 def score_over_dataset(testset_dir, pred_dir, name_ndvi_pred = "ndvi_pred", verbose = True, num_workers = 1):
     """Compute normalized Nash sutcliffe model efficiency of NDVI for a full dataset
 
@@ -61,27 +74,27 @@ def score_over_dataset(testset_dir, pred_dir, name_ndvi_pred = "ndvi_pred", verb
     targetfiles = list(Path(testset_dir).glob("**/*.nc"))
 
     pred_dir = Path(pred_dir)
-    
-    if verbose:
-        print(f"scoring {testset_dir} against {pred_dir}")
 
-    def score_targetfile(targetfile):
+    predfiles = []
+    inputargs = []
+    for targetfile in targetfiles:
         cubename = targetfile.name
         region = targetfile.parent.stem
 
         predfile = pred_dir/region/cubename
+        predfiles.append(predfile)
+        inputargs.append([targetfile, predfile, name_ndvi_pred])
+    
+    if verbose:
+        print(f"scoring {testset_dir} against {pred_dir}")
 
-        targ = xr.open_dataset(targetfile)
-        pred = xr.open_dataset(predfile)
-
-        curr_df = normalized_NSE(targ, pred, name_ndvi_pred=name_ndvi_pred)
-        curr_df["id"] = targetfile.stem
+    
 
     with ProcessPoolExecutor(max_workers = num_workers) as pool:
         if verbose:
-            dfs = list(tqdm(pool.map(score_targetfile, targetfiles), total = len(targetfiles)))
+            dfs = list(tqdm(pool.map(score_from_args, inputargs), total = len(inputargs)))
         else:
-            dfs = list(pool.map(score_targetfile, targetfiles))
+            dfs = list(pool.map(score_from_args, inputargs))
 
 
     df = pd.concat(dfs).reset_index()
