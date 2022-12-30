@@ -1,6 +1,6 @@
 
 
-
+import numpy as np
 import s3fs
 import xarray as xr
 from pathlib import Path
@@ -87,3 +87,43 @@ def load_minicube(dataset = "earthnet2021x", split = "train", id = "29SND_2018-0
     mc = xr.open_dataset(s3.open(file))
 
     return mc
+
+def load_en21x_as_npz(minicube_path):
+    """Load a minicube from the EarthNet2021x dataset as an EarthNet2021-like fake NPZ
+
+        Will return a dictionary with keys `['highresdynamic', 'highresstatic', 'mesodynamic', 'mesostatic']` as in the `.npz` files from EarthNet2021.
+        
+        Attention!
+            - `highresdynamic` has just 5 channels (like in the EarthNet2021 test sets)
+            - mesoscale data is just a single value repeated over the 80x80 mesoscale grid
+            - the COPDEM in EarthNet2021x has slightly higher resolution than the EU-DEM from EarthNet2021.
+            - This function returns a dictionary and not a `numpy.lib.npyio.NpzFile`
+
+        Args:
+            minicube_path (str): Path to the minicube from EarthNet2021x to be loaded as a fake NPZ.
+    
+    """
+
+    minicube = xr.open_dataset(minicube_path)
+
+    minicube["s2_mask"] = minicube.s2_mask.where(minicube.s2_mask == 0.0, 1.0)
+
+    hrd_fake = minicube[["s2_B02", "s2_B03", "s2_B04", "s2_B8A", "s2_mask"]].to_array("band").isel(time = slice(4, None, 5)).transpose("lat", "lon", "band", "time").values
+
+    eobs_shift = xr.DataArray(data = [0.0, -900., 50., 50., 50.], coords = {"var": ["eobs_rr", "eobs_pp", "eobs_tg", "eobs_tn", "eobs_tx"]})
+    eobs_scale = xr.DataArray(data = [50., 200., 100., 100., 100.], coords = {"var": ["eobs_rr", "eobs_pp", "eobs_tg", "eobs_tn", "eobs_tx"]})
+
+    md_fake = ((minicube[["eobs_rr", "eobs_pp", "eobs_tg", "eobs_tn", "eobs_tx"]].to_array("var") + eobs_shift)/eobs_scale).transpose("var", "time").values[None, None, :, :].repeat(80, 0).repeat(80, 1)
+
+    hrs_fake = (minicube.cop_dem.values[:, :, None] + 2000)/4000
+
+    ms_fake = np.nanmean(hrs_fake) * np.ones((80, 80, 1))
+
+    npz_fake = {
+        'highresdynamic': hrd_fake,
+        'highresstatic': hrs_fake,
+        'mesodynamic': md_fake,
+        'mesostatic': ms_fake
+    }
+
+    return npz_fake
