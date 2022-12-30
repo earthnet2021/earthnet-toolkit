@@ -5,7 +5,7 @@ import xarray as xr
 import pandas as pd
 from pathlib import Path
 from tqdm import tqdm
-
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 
 
 def normalized_NSE(targ, pred, name_ndvi_pred = "ndvi_pred"):
@@ -47,7 +47,7 @@ def normalized_NSE(targ, pred, name_ndvi_pred = "ndvi_pred"):
 
     return df.drop(columns="sentinel:product_id", errors = "ignore")
 
-def score_over_dataset(testset_dir, pred_dir, name_ndvi_pred = "ndvi_pred", verbose = True):
+def score_over_dataset(testset_dir, pred_dir, name_ndvi_pred = "ndvi_pred", verbose = True, num_workers = 1):
     """Compute normalized Nash sutcliffe model efficiency of NDVI for a full dataset
 
     Args:
@@ -55,6 +55,7 @@ def score_over_dataset(testset_dir, pred_dir, name_ndvi_pred = "ndvi_pred", verb
         pred_dir (str): directory under which the predictions are stored. e.g. `"preds/my_model/earthnet2021x-test/"`.
         name_ndvi_pred (str, optional): Name of the NDVI prediction variable, defaults to `"ndvi_pred"`.
         verbose (boolean, optional): Set to false to silence this function.
+        num_workers (int, optional): Number of threads to use for scoring. Defaults to 1.
     """
 
     targetfiles = list(Path(testset_dir).glob("**/*.nc"))
@@ -64,9 +65,7 @@ def score_over_dataset(testset_dir, pred_dir, name_ndvi_pred = "ndvi_pred", verb
     if verbose:
         print(f"scoring {testset_dir} against {pred_dir}")
 
-    dfs = []
-    for targetfile in tqdm(targetfiles) if verbose else targetfiles:
-
+    def score_targetfile(targetfile):
         cubename = targetfile.name
         region = targetfile.parent.stem
 
@@ -78,7 +77,12 @@ def score_over_dataset(testset_dir, pred_dir, name_ndvi_pred = "ndvi_pred", verb
         curr_df = normalized_NSE(targ, pred, name_ndvi_pred=name_ndvi_pred)
         curr_df["id"] = targetfile.stem
 
-        dfs.append(curr_df)
+    with ThreadPoolExecutor(max_workers = num_workers) as pool:
+        if verbose:
+            dfs = list(tqdm(pool.map(score_targetfile, targetfiles), total = len(targetfiles)))
+        else:
+            dfs = list(pool.map(score_targetfile, targetfiles))
+
 
     df = pd.concat(dfs).reset_index()
 
