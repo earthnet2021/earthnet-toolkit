@@ -77,7 +77,7 @@ def score_over_dataset(testset_dir, pred_dir, name_ndvi_pred = "ndvi_pred", verb
         curr_df = normalized_NSE(targ, pred, name_ndvi_pred=name_ndvi_pred)
         curr_df["id"] = targetfile.stem
 
-    with ThreadPoolExecutor(max_workers = num_workers) as pool:
+    with ProcessPoolExecutor(max_workers = num_workers) as pool:
         if verbose:
             dfs = list(tqdm(pool.map(score_targetfile, targetfiles), total = len(targetfiles)))
         else:
