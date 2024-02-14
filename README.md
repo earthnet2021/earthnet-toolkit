@@ -10,6 +10,26 @@ Find more information on https://www.earthnet.tech.
 pip install earthnet
 ```
 
+# Downloading new dataset EarthNet2023 - Africa
+
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.10659371.svg)](https://doi.org/10.5281/zenodo.10659371)
+
+Ensure you have enough free disk space! We recommend 1.5TB.
+```
+import earthnet as entk
+entk.download(dataset = "earthnet2023", split = "all", save_directory = "data_dir")
+```
+Where `data_dir` is the directory where EarthNet2023 - Africa shall be saved and `split` is `"all"` or a subset of `["train", "test]`.
+
+When using EarthNet2023 - Africa, please for now cite the DOI `10.5281/zenodo.10659371`, until there is an original publication on the dataset. 
+```
+Vitus Benson, Christian Requena-Mesa, Jeran Poehls, Lazaro Alonso, Claire Robin, Nuno Carvalhais, Markus Reichstein. (2024). 
+EarthNet Toolkit for accessing the EarthNet2023 - Africa dataset.
+Zenodo. https://doi.org/10.5281/zenodo.10659371
+```
+
+> This work has received funding from the European Union’s Horizon 2020 Research and Innovation Project DeepCube, under Grant Agreement Numbers 101004188.
+
 # Downloading new dataset EarthNet2021x
 
 Ensure you have enough free disk space! We recommend 1TB.
@@ -17,7 +37,7 @@ Ensure you have enough free disk space! We recommend 1TB.
 import earthnet as en
 en.download(dataset = "earthnet2021x", split = "train", save_directory = "data_dir")
 ```
-Where  `data_dir` is the directory where EarthNet2021 shall be saved and `splits` is `"all"`or a subset of `["train","iid","ood","extreme","seasonal"]`.
+Where  `data_dir` is the directory where EarthNet2021 shall be saved and `split` is `"all"`or a subset of `["train","iid","ood","extreme","seasonal"]`.
 
 # Scoring new dataset EarthNet2021x
 
